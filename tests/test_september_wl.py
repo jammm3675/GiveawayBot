@@ -1,18 +1,10 @@
 import os
-import sys
 import unittest
 from datetime import datetime, timedelta, timezone
-from types import SimpleNamespace
 
 os.environ.setdefault("BOT_TOKEN", "123456:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi")
 
-loader = SimpleNamespace(http_session=None)
-sys.modules["loader"] = loader
-sys.modules["database"] = SimpleNamespace(db=SimpleNamespace())
-sys.modules["utils"] = SimpleNamespace(
-    normalize_to_raw=lambda value: str(value).lower(),
-    raw_to_user_friendly=lambda value: str(value),
-)
+import loader
 from services import september_wl_service as service
 
 
