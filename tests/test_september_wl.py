@@ -77,13 +77,58 @@ class SeptemberWlTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(snapshot.wl_count, 2)
         self.assertFalse(snapshot.stale)
 
-    async def test_missing_api_key_fails_cleanly(self):
+    async def test_missing_getgems_key_uses_toncenter(self):
         old_key = os.environ.pop("GETGEMS_API_KEY", None)
+        pages = [{"nft_items": [
+            {
+                "address": "0:aaa",
+                "collection_address": service.NOTAPES_COLLECTION,
+                "real_owner": "0:user",
+            },
+            {
+                "address": "0:other",
+                "collection_address": service.NOTAPES_COLLECTION,
+                "real_owner": "0:other",
+            },
+        ]}]
+        fake = FakeSession(pages)
+        old_session = loader.http_session
+        loader.http_session = fake
         try:
-            with self.assertRaises(service.GetgemsUnavailableError):
-                await service.fetch_notapes_count("0:user")
+            self.assertEqual(await service.fetch_notapes_count("0:user"), 1)
+            self.assertEqual(fake.params[0]["limit"], 1000)
+            self.assertEqual(fake.params[0]["offset"], 0)
         finally:
+            loader.http_session = old_session
             if old_key is not None:
+                os.environ["GETGEMS_API_KEY"] = old_key
+
+    async def test_getgems_error_uses_toncenter(self):
+        pages = [
+            {"error": "invalid key"},
+            {"nft_items": []},
+        ]
+        fake = FakeSession(pages)
+        old_session = loader.http_session
+        old_key = os.environ.get("GETGEMS_API_KEY")
+        loader.http_session = fake
+        os.environ["GETGEMS_API_KEY"] = "invalid-key"
+        original_get = fake.get
+
+        def get_with_getgems_error(url, **kwargs):
+            if "getgems.io" in url:
+                fake.params.append(kwargs["params"])
+                return FakeResponse(next(fake.pages), status=401)
+            return original_get(url, **kwargs)
+
+        fake.get = get_with_getgems_error
+        try:
+            self.assertEqual(await service.fetch_notapes_count("0:user"), 0)
+        finally:
+            loader.http_session = old_session
+            if old_key is None:
+                os.environ.pop("GETGEMS_API_KEY", None)
+            else:
                 os.environ["GETGEMS_API_KEY"] = old_key
 
 

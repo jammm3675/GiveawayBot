@@ -15,9 +15,11 @@ logger = logging.getLogger(__name__)
 
 NOTAPES_COLLECTION = "EQDwLDJcRXegHyvvRHXouGrUODuF0eagnWzLvUMUSTw8tv3Y"
 GETGEMS_BASE_URL = "https://api.getgems.io/public-api"
+TONCENTER_NFT_URL = "https://toncenter.com/api/v3/nft/items"
 WL_APES_PER_PLACE = 4
 CACHE_TTL = timedelta(minutes=10)
 MAX_PAGES = 100
+TONCENTER_PAGE_SIZE = 1000
 
 
 class GetgemsUnavailableError(RuntimeError):
@@ -47,7 +49,7 @@ def _as_utc(value: object) -> datetime | None:
     return parsed.astimezone(timezone.utc)
 
 
-async def fetch_notapes_count(wallet_address: str) -> int:
+async def _fetch_getgems_count(wallet_address: str) -> int:
     api_key = os.getenv("GETGEMS_API_KEY", "").strip()
     if not api_key:
         raise GetgemsUnavailableError("GETGEMS_API_KEY is not configured")
@@ -116,6 +118,91 @@ async def fetch_notapes_count(wallet_address: str) -> int:
             await session.close()
 
     raise GetgemsUnavailableError("Getgems pagination limit exceeded")
+
+
+async def _fetch_toncenter_count(wallet_address: str) -> int:
+    """Fallback for when the paid Getgems API is not configured or unavailable."""
+    wallet_raw = normalize_to_raw(wallet_address)
+    collection_raw = normalize_to_raw(NOTAPES_COLLECTION)
+    nft_addresses: set[str] = set()
+
+    session = loader.http_session
+    owns_session = session is None or session.closed
+    if owns_session:
+        session = aiohttp.ClientSession()
+    try:
+        for page in range(MAX_PAGES):
+            params = {
+                "owner_address": wallet_raw,
+                "collection_address": collection_raw,
+                "include_on_sale": "true",
+                "limit": TONCENTER_PAGE_SIZE,
+                "offset": page * TONCENTER_PAGE_SIZE,
+            }
+            try:
+                async with session.get(
+                    TONCENTER_NFT_URL,
+                    headers={"accept": "application/json"},
+                    params=params,
+                    timeout=15,
+                ) as response:
+                    if response.status != 200:
+                        body = await response.text()
+                        raise GetgemsUnavailableError(
+                            f"TON Center returned HTTP {response.status}: {body[:160]}"
+                        )
+                    payload = await response.json()
+            except (aiohttp.ClientError, TimeoutError) as exc:
+                raise GetgemsUnavailableError("TON Center request failed") from exc
+
+            items = payload.get("nft_items")
+            if not isinstance(items, list):
+                raise GetgemsUnavailableError("TON Center returned an invalid response")
+
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                if normalize_to_raw(str(item.get("collection_address") or "")) != collection_raw:
+                    continue
+                owner = item.get("real_owner") or item.get("owner_address")
+                if not owner or normalize_to_raw(str(owner)) != wallet_raw:
+                    continue
+                address = item.get("address")
+                if address:
+                    nft_addresses.add(normalize_to_raw(str(address)))
+
+            if len(items) < TONCENTER_PAGE_SIZE:
+                return len(nft_addresses)
+    finally:
+        if owns_session:
+            await session.close()
+
+    raise GetgemsUnavailableError("TON Center pagination limit exceeded")
+
+
+async def fetch_notapes_count(wallet_address: str) -> int:
+    """Count NOTAPES via Getgems, with a public chain indexer as a fallback."""
+    getgems_error = None
+    if os.getenv("GETGEMS_API_KEY", "").strip():
+        try:
+            return await _fetch_getgems_count(wallet_address)
+        except GetgemsUnavailableError as exc:
+            getgems_error = exc
+            logger.warning("Getgems NOTAPES check failed; trying TON Center: %s", exc)
+    else:
+        logger.warning("GETGEMS_API_KEY is not configured; using TON Center for NOTAPES")
+
+    try:
+        count = await _fetch_toncenter_count(wallet_address)
+        logger.info("NOTAPES count obtained from TON Center fallback: %s", count)
+        return count
+    except GetgemsUnavailableError as toncenter_error:
+        logger.warning(
+            "NOTAPES providers unavailable (Getgems=%s; TON Center=%s)",
+            getgems_error or "not configured",
+            toncenter_error,
+        )
+        raise GetgemsUnavailableError("All NOTAPES providers are unavailable") from toncenter_error
 
 
 async def get_wl_snapshot(user_id: int, wallet_address: str, profile: dict) -> WlSnapshot:
