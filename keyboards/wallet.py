@@ -28,8 +28,16 @@ def wallet_connect_keyboard(url: str, texts: dict) -> InlineKeyboardMarkup:
     builder.adjust(1)
     return builder.as_markup()
 
-def wallet_success_keyboard(texts: dict) -> InlineKeyboardMarkup:
+def wallet_success_keyboard(
+    texts: dict,
+    callback_data: str = "game_menu",
+    button_text: str | None = None,
+) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=texts["wallet_game_menu_btn"], callback_data="game_menu", icon_custom_emoji_id="5258508428212445001")
+    builder.button(
+        text=button_text or texts["wallet_game_menu_btn"],
+        callback_data=callback_data,
+        icon_custom_emoji_id="5258508428212445001",
+    )
     builder.adjust(1)
     return builder.as_markup()

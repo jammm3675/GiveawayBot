@@ -8,6 +8,7 @@ import locales.en.notifications
 import locales.en.admin
 import locales.en.common
 import locales.en.store
+import locales.en.september_wl
 
 import locales.ru.main_menu
 import locales.ru.game_menu
@@ -18,6 +19,7 @@ import locales.ru.notifications
 import locales.ru.admin
 import locales.ru.common
 import locales.ru.store
+import locales.ru.september_wl
 
 def get_locale_by_lang(lang: str):
     # Base English texts
@@ -31,7 +33,8 @@ def get_locale_by_lang(lang: str):
         locales.en.notifications,
         locales.en.admin,
         locales.en.common,
-        locales.en.store
+        locales.en.store,
+        locales.en.september_wl,
     ]
 
     for module in modules:
@@ -47,7 +50,8 @@ def get_locale_by_lang(lang: str):
             locales.ru.notifications,
             locales.ru.admin,
             locales.ru.common,
-            locales.ru.store
+            locales.ru.store,
+            locales.ru.september_wl,
         ]
         for module in ru_modules:
             texts.update(module.TEXTS)

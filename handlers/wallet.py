@@ -210,7 +210,13 @@ async def wait_for_connection(user_id: int, connector: TonConnect, state: FSMCon
                 await remember_message(state, msg1, category=MessageCategory.PERSISTENT)
 
                 # 3. Send action button
-                kb = wallet_success_keyboard(texts)
+                state_data = await state.get_data()
+                return_callback = state_data.get("wallet_return_callback")
+                kb = wallet_success_keyboard(
+                    texts,
+                    callback_data=return_callback or "game_menu",
+                    button_text=texts.get("september_wl_return_btn") if return_callback == "september_wl" else None,
+                )
                 msg2 = await safe_bot_send_message(bot, user_id, texts["wallet_return_to_game"], reply_markup=kb)
                 await remember_message(state, msg2, category=MessageCategory.PERSISTENT)
 

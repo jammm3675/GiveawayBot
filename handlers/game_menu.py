@@ -43,8 +43,9 @@ async def show_game_menu(message: types.Message | types.CallbackQuery, state: FS
     builder.button(text=texts["referral_btn"], callback_data="referral_menu", icon_custom_emoji_id="6032594876506312598")
     builder.button(text=texts["login_btn"], callback_data="wallet_menu", icon_custom_emoji_id="5258204546391351475")
     builder.button(text=texts["store_btn"], callback_data="store_menu", icon_custom_emoji_id="5983399041197675256")
+    builder.button(text=texts["september_wl_btn"], callback_data="september_wl")
     builder.button(text=texts["game_main_menu_btn"], callback_data="main_menu", icon_custom_emoji_id="6042137469204303531", style="danger")
-    builder.adjust(2, 2, 1, 1)
+    builder.adjust(2, 2, 1, 1, 1)
 
     if isinstance(message, types.CallbackQuery):
         await safe_edit_text(message, text, reply_markup=builder.as_markup(), parse_mode=ParseMode.HTML, state=state)
