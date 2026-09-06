@@ -42,8 +42,9 @@ class SeptemberWlTests(unittest.IsolatedAsyncioTestCase):
     async def test_getgems_pagination_and_collection_filter(self):
         pages = [
             {"success": True, "response": {"items": [
-                {"address": "0:aaa", "collectionAddress": service.NOTAPES_COLLECTION},
+                {"address": "0:aaa", "collectionAddress": service.NOTAPES_COLLECTION, "actualOwnerAddress": "0:user"},
                 {"address": "0:bad", "collectionAddress": "0:wrong"},
+                {"address": "0:other", "collectionAddress": service.NOTAPES_COLLECTION, "actualOwnerAddress": "0:other"},
             ], "cursor": "next"}},
             {"success": True, "response": {"items": [
                 {"address": "0:bbb", "collectionAddress": service.NOTAPES_COLLECTION},

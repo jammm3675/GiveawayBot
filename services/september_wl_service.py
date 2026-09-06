@@ -62,6 +62,7 @@ async def fetch_notapes_count(wallet_address: str) -> int:
     seen_cursors: set[str] = set()
     nft_addresses: set[str] = set()
     collection_raw = normalize_to_raw(NOTAPES_COLLECTION)
+    wallet_raw = normalize_to_raw(wallet_address)
 
     session = loader.http_session
     owns_session = session is None or session.closed
@@ -94,7 +95,10 @@ async def fetch_notapes_count(wallet_address: str) -> int:
                 if not isinstance(item, dict):
                     continue
                 item_collection = item.get("collectionAddress")
-                if item_collection and normalize_to_raw(str(item_collection)) != collection_raw:
+                if not item_collection or normalize_to_raw(str(item_collection)) != collection_raw:
+                    continue
+                actual_owner = item.get("actualOwnerAddress") or item.get("ownerAddress")
+                if actual_owner and normalize_to_raw(str(actual_owner)) != wallet_raw:
                     continue
                 address = item.get("address")
                 if address:
