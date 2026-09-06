@@ -28,6 +28,7 @@ from handlers.wallet import router as wallet_router
 from handlers.store import router as store_router
 from handlers.store_admin import router as store_admin_router
 from handlers.boost import router as boost_router
+from handlers.september_wl import router as september_wl_router
 from tasks.og_snapshot import create_og_snapshot_once
 
 # Setup logging
@@ -72,6 +73,7 @@ dp.include_router(notifications_router)
 dp.include_router(game_menu_router)
 dp.include_router(wallet_router)
 dp.include_router(boost_router)
+dp.include_router(september_wl_router)
 dp.include_router(store_admin_router)
 dp.include_router(store_router)
 dp.include_router(main_menu_router)

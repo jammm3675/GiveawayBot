@@ -363,6 +363,19 @@ class Database:
             logger.error(f"Error getting user wallet: {e}")
             return None
 
+    async def get_september_wl_profile(self, telegram_id: int) -> Optional[Dict]:
+        if not self._check_client(): return None
+        try:
+            response = await self.client.table("users").select(
+                "telegram_id,username,first_name,wallet_address,ethereum_wallet,"
+                "ethereum_wallet_updated_at,september_wl_nft_count,"
+                "september_wl_count,september_wl_checked_at,september_wl_checked_wallet"
+            ).eq("telegram_id", telegram_id).limit(1).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error("Error getting September WL profile: %s", e)
+            return None
+
     async def ensure_user_exists(self, telegram_id: int):
         if not self._check_client(): return
         try:

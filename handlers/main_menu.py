@@ -260,7 +260,10 @@ async def cmd_start(message: types.Message, command: CommandObject, state: FSMCo
     )
 
     # 3. Process referral parameter
-    deep_link = command.args if command.args and command.args.startswith(("lot_", "giveaway_", "offer_")) else None
+    deep_link = command.args if command.args and (
+        command.args == "september_wl"
+        or command.args.startswith(("lot_", "giveaway_", "offer_"))
+    ) else None
     if deep_link:
         await state.update_data(pending_deep_link=deep_link)
     elif command.args:
@@ -307,6 +310,11 @@ async def dispatch_deep_link(message: types.Message | types.CallbackQuery, paylo
             await show_main_menu_callback(message, texts)
         else:
             await show_main_menu_message(message, texts)
+    if payload == "september_wl":
+        await state.update_data(pending_deep_link=None)
+        from handlers.september_wl import show_september_wl
+        await show_september_wl(message, state, texts)
+        return
     try:
         kind, raw_id = payload.rsplit("_", 1)
         entity_id = int(raw_id)

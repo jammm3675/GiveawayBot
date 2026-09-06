@@ -4,6 +4,7 @@ python-dotenv
 fastapi
 uvicorn
 pytz
+tzdata>=2025.2
 pytonconnect
 aiohttp
 pytoniq-core
