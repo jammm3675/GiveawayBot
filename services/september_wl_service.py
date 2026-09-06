@@ -56,8 +56,8 @@ async def _fetch_getgems_count(wallet_address: str) -> int:
 
     api_wallet = raw_to_user_friendly(wallet_address)
     url = (
-        f"{GETGEMS_BASE_URL}/nft/collection/items/"
-        f"{quote(NOTAPES_COLLECTION, safe='')}/{quote(api_wallet, safe='')}"
+        f"{GETGEMS_BASE_URL}/v1/nfts/collection/"
+        f"{quote(NOTAPES_COLLECTION, safe='')}/owner/{quote(api_wallet, safe='')}"
     )
     headers = {"accept": "application/json", "Authorization": api_key}
     cursor = None

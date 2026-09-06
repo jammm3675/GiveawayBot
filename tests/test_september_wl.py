@@ -32,8 +32,10 @@ class FakeSession:
     def __init__(self, pages):
         self.pages = iter(pages)
         self.params = []
+        self.urls = []
 
-    def get(self, _url, **kwargs):
+    def get(self, url, **kwargs):
+        self.urls.append(url)
         self.params.append(kwargs["params"])
         return FakeResponse(next(self.pages))
 
@@ -58,6 +60,10 @@ class SeptemberWlTests(unittest.IsolatedAsyncioTestCase):
         try:
             self.assertEqual(await service.fetch_notapes_count("0:user"), 2)
             self.assertEqual(fake.params, [{"limit": 100}, {"limit": 100, "after": "next"}])
+            self.assertTrue(all(
+                "/v1/nfts/collection/" in url and "/owner/" in url
+                for url in fake.urls
+            ))
         finally:
             loader.http_session = old_session
             if old_key is None:
@@ -117,6 +123,7 @@ class SeptemberWlTests(unittest.IsolatedAsyncioTestCase):
 
         def get_with_getgems_error(url, **kwargs):
             if "getgems.io" in url:
+                fake.urls.append(url)
                 fake.params.append(kwargs["params"])
                 return FakeResponse(next(fake.pages), status=401)
             return original_get(url, **kwargs)
